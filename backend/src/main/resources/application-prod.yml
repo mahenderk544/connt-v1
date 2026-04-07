@@ -1,0 +1,28 @@
+# Activated with SPRING_PROFILES_ACTIVE=prod (set in ECS task definition).
+# Set these in the task definition (plain env or secrets from Secrets Manager / SSM):
+#   SPRING_DATASOURCE_URL=jdbc:postgresql://<rds-endpoint>:5432/connto?sslmode=require
+#   SPRING_DATASOURCE_USERNAME
+#   SPRING_DATASOURCE_PASSWORD
+#   CONNTO_JWT_SECRET  (long random string)
+# Optional:
+#   SERVER_SERVLET_CONTEXT_PATH=/connto
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+
+connto:
+  jwt:
+    secret: ${CONNTO_JWT_SECRET}
+    expiration-ms: 86400000
+  otp:
+    ttl-seconds: 300
+    max-attempts: 5
+    dev-return-code: false
+
+logging:
+  level:
+    root: INFO
+    com.connto: INFO

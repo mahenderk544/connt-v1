@@ -1,0 +1,40 @@
+GitHub Actions → AWS ECS (OIDC, no keys on GitHub)
+==================================================
+
+Prerequisites: AWS CLI logged in, first ECS task definition registered once (see workflow header
+in .github/workflows/backend-ecs-deploy.yml), ECR repository name matches GitHub variable.
+
+Replace placeholders in the JSON templates under infra/iam/:
+  ACCOUNT_ID, AWS_REGION, GITHUB_ORG, GITHUB_REPO, ECR_REPOSITORY_NAME
+  ECS_TASK_EXECUTION_ROLE_NAME (e.g. ecsTaskExecutionRole)
+  ECS_TASK_ROLE_NAME — use same as execution role ARN twice if you only use one role
+
+1) GitHub OIDC provider in AWS (once per account)
+   aws iam list-open-id-connect-providers
+   If token.actions.githubusercontent.com is missing:
+   aws iam create-open-id-connect-provider \
+     --url https://token.actions.githubusercontent.com \
+     --client-id-list sts.amazonaws.com \
+     --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1 1c58a3a8518e8759bf075b76b750d4f2df264fcd
+
+2) Create IAM role (e.g. github-actions-ecs-deploy)
+   - Trust policy: paste github-oidc-trust-policy.template.json after replacements
+   - Permissions: inline policy from github-actions-deploy-policy.template.json after replacements
+   If you do not use a separate task role, set both PassRole Resource entries to the execution role ARN.
+
+3) GitHub repository
+   Settings → Secrets and variables → Actions
+   Variables:
+     AWS_USE_OIDC = true
+     AWS_REGION = ap-south-1   (or your region)
+     ECR_REPOSITORY = connto-backend
+     ECS_CLUSTER = your-cluster-name
+     ECS_SERVICE = your-service-name
+     ECS_TASK_DEFINITION = connto-backend   (task definition FAMILY)
+   Secrets:
+     AWS_ROLE_TO_ASSUME = arn:aws:iam::ACCOUNT_ID:role/github-actions-ecs-deploy
+
+4) Push to main (change under backend/) or Actions → run workflow manually.
+
+Alternative (no OIDC): omit AWS_USE_OIDC or set to false; add secrets AWS_ACCESS_KEY_ID and
+AWS_SECRET_ACCESS_KEY instead of AWS_ROLE_TO_ASSUME.
