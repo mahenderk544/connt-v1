@@ -14,7 +14,14 @@ Connto backend on AWS ECS using Docker
    cd infra
    .\push-backend-ecr.ps1 -Region ap-south-1 -RepositoryName connto-backend
 
-3) First-time ECS task definition (Fargate)
+3) First-time ECS task definition + service (Fargate) — PowerShell
+   cd infra
+   .\provision-ecs-fargate.ps1 -SubnetIds "subnet-xxx,subnet-yyy" -SecurityGroupIds "sg-zzz" `
+     -RdsEndpoint "your-rds.region.rds.amazonaws.com" `
+     -RdsPasswordSecretArn "arn:aws:secretsmanager:..." -JwtSecretArn "arn:aws:secretsmanager:..."
+   (Requires AWS CLI; image tag defaults to latest — push an image to ECR first, or run GitHub Actions once to populate latest.)
+
+3b) First-time ECS task definition (Fargate) — manual
    - Copy infra/ecs/fargate-task-definition.template.json → fargate-task-definition.json
    - Replace YOUR_ACCOUNT_ID, YOUR_REGION, YOUR_RDS_ENDPOINT, secret ARNs, IAM roles
    - Create log group /ecs/connto-backend in CloudWatch (optional; template uses awslogs-create-group)
