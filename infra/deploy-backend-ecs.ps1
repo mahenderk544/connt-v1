@@ -76,14 +76,17 @@ if (-not $found) {
 
 $newJson = $td | ConvertTo-Json -Depth 100
 
-$tmp = Join-Path $env:TEMP "ecs-td-$([Guid]::NewGuid().ToString('n')).json"
+# Windows AWS CLI does not support file://-; use file under infra + file:/// long path.
+$tmp = Join-Path $PSScriptRoot (".ecs-td-" + [Guid]::NewGuid().ToString("n") + ".json")
 
 $utf8NoBom = New-Object System.Text.UTF8Encoding $false
 [System.IO.File]::WriteAllText($tmp, $newJson, $utf8NoBom)
 
 try {
-    $newArn = [System.IO.File]::ReadAllText($tmp) | aws ecs register-task-definition `
-        --cli-input-json "file://-" `
+    $fullPath = (Resolve-Path -LiteralPath $tmp).Path
+    $fileUri = "file:///" + ($fullPath -replace "\\", "/")
+    $newArn = aws ecs register-task-definition `
+        --cli-input-json $fileUri `
         --region $Region `
         --query taskDefinition.taskDefinitionArn `
         --output text

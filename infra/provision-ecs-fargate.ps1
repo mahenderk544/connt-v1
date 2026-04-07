@@ -103,15 +103,16 @@ $td.containerDefinitions[0].secrets = @(
 $td.containerDefinitions[0].logConfiguration.options."awslogs-group" = $LogGroup
 $td.containerDefinitions[0].logConfiguration.options."awslogs-region" = $Region
 
-$tmp = Join-Path $env:TEMP "connto-taskdef-$([Guid]::NewGuid().ToString('n')).json"
+# Windows AWS CLI does not support file://- (stdin); use a file under infra + resolved long path.
+$tmp = Join-Path $PSScriptRoot (".connto-taskdef-" + [Guid]::NewGuid().ToString("n") + ".json")
 $utf8NoBom = New-Object System.Text.UTF8Encoding $false
 [System.IO.File]::WriteAllText($tmp, ($td | ConvertTo-Json -Depth 20), $utf8NoBom)
 
 try {
     Write-Host "Registering task definition family $TaskFamily ..."
-    # Avoid file:// under %TEMP% on Windows (8.3 short paths break AWS CLI file loading).
-    $taskDefJson = [System.IO.File]::ReadAllText($tmp)
-    $taskDefArn = $taskDefJson | aws ecs register-task-definition --cli-input-json "file://-" --region $Region --query taskDefinition.taskDefinitionArn --output text
+    $fullPath = (Resolve-Path -LiteralPath $tmp).Path
+    $fileUri = "file:///" + ($fullPath -replace "\\", "/")
+    $taskDefArn = aws ecs register-task-definition --cli-input-json $fileUri --region $Region --query taskDefinition.taskDefinitionArn --output text
     if ($LASTEXITCODE -ne 0) { throw "register-task-definition failed" }
     Write-Host "Registered: $taskDefArn" -ForegroundColor Green
 }
