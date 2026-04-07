@@ -32,8 +32,14 @@ $utf8 = New-Object System.Text.UTF8Encoding $false
 [System.IO.File]::WriteAllText($tmp, $trust.Trim(), $utf8)
 
 try {
-    aws iam get-role --role-name $RoleName --output json 2>$null | Out-Null
-    if ($LASTEXITCODE -eq 0) {
+    # AWS CLI prints NoSuchEntity to stderr; with $ErrorActionPreference Stop, PowerShell treats that as a failing error.
+    $prevEa = $ErrorActionPreference
+    $ErrorActionPreference = "SilentlyContinue"
+    aws iam get-role --role-name $RoleName --output json *> $null
+    $getRoleExit = $LASTEXITCODE
+    $ErrorActionPreference = $prevEa
+
+    if ($getRoleExit -eq 0) {
         Write-Host "Role $RoleName already exists." -ForegroundColor Green
         aws iam get-role --role-name $RoleName --query Role.Arn --output text
         exit 0
