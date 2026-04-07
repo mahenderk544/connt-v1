@@ -1,15 +1,15 @@
 {
-  "family": "connto-backend",
+  "family": "__TASK_FAMILY__",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
-  "cpu": "512",
-  "memory": "1024",
-  "executionRoleArn": "arn:aws:iam::YOUR_ACCOUNT_ID:role/ecsTaskExecutionRole",
-  "taskRoleArn": "arn:aws:iam::YOUR_ACCOUNT_ID:role/connto-backend-task",
+  "cpu": "__CPU__",
+  "memory": "__MEMORY__",
+  "executionRoleArn": "__EXECUTION_ROLE_ARN__",
+__TASK_ROLE_LINE__
   "containerDefinitions": [
     {
-      "name": "backend",
-      "image": "YOUR_ACCOUNT_ID.dkr.ecr.YOUR_REGION.amazonaws.com/connto-backend:latest",
+      "name": "__CONTAINER_NAME__",
+      "image": "__IMAGE_URI__",
       "essential": true,
       "portMappings": [
         {
@@ -21,25 +21,25 @@
         { "name": "SPRING_PROFILES_ACTIVE", "value": "prod" },
         {
           "name": "SPRING_DATASOURCE_URL",
-          "value": "jdbc:postgresql://YOUR_RDS_ENDPOINT:5432/connto?sslmode=require"
+          "value": "__JDBC_URL__"
         },
-        { "name": "SPRING_DATASOURCE_USERNAME", "value": "connto" }
+        { "name": "SPRING_DATASOURCE_USERNAME", "value": "__DB_USERNAME__" }
       ],
       "secrets": [
         {
           "name": "SPRING_DATASOURCE_PASSWORD",
-          "valueFrom": "arn:aws:secretsmanager:YOUR_REGION:YOUR_ACCOUNT_ID:secret:connto/rds-password-AbCdEf"
+          "valueFrom": "__RDS_PASSWORD_SECRET_ARN__"
         },
         {
           "name": "CONNTO_JWT_SECRET",
-          "valueFrom": "arn:aws:secretsmanager:YOUR_REGION:YOUR_ACCOUNT_ID:secret:connto/jwt-secret-XyZaBc"
+          "valueFrom": "__JWT_SECRET_ARN__"
         }
       ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/connto-backend",
-          "awslogs-region": "YOUR_REGION",
+          "awslogs-group": "__LOG_GROUP__",
+          "awslogs-region": "__AWS_REGION__",
           "awslogs-stream-prefix": "ecs",
           "awslogs-create-group": "true"
         }

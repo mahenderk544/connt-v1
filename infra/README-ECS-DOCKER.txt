@@ -23,7 +23,8 @@ Connto backend on AWS ECS using Docker
 
 3b) First-time ECS task definition (Fargate) — manual
    - Copy infra/ecs/fargate-task-definition.template.json → fargate-task-definition.json
-   - Replace YOUR_ACCOUNT_ID, YOUR_REGION, YOUR_RDS_ENDPOINT, secret ARNs, IAM roles
+   - Replace placeholders __TASK_FAMILY__, __EXECUTION_ROLE_ARN__, __IMAGE_URI__, __JDBC_URL__,
+     __RDS_PASSWORD_SECRET_ARN__, __JWT_SECRET_ARN__, etc. (or run provision-ecs-fargate.ps1)
    - Create log group /ecs/connto-backend in CloudWatch (optional; template uses awslogs-create-group)
    - aws ecs register-task-definition --cli-input-json file://fargate-task-definition.json --region YOUR_REGION
 

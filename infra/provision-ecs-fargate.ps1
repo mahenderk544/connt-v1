@@ -75,56 +75,52 @@ $jdbcUrl = "jdbc:postgresql://${RdsEndpoint}:5432/${DbName}?sslmode=require"
 
 Write-Host "Account $account  Region $Region  Image $image" -ForegroundColor Cyan
 
-$td = Get-Content -LiteralPath $templatePath -Raw -Encoding UTF8 | ConvertFrom-Json
-$td.family = $TaskFamily
-$td.cpu = $Cpu
-$td.memory = $Memory
-$td.executionRoleArn = $executionRoleArn
+function Escape-JsonString([string]$Value) {
+    if ($null -eq $Value) { return "" }
+    return $Value.Replace('\', '\\').Replace('"', '\"')
+}
+
+$taskRoleLine = ""
 if ($TaskRoleName) {
     $taskRoleArn = aws iam get-role --role-name $TaskRoleName --query Role.Arn --output text 2>$null
     if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($taskRoleArn)) { throw "IAM role not found: $TaskRoleName" }
     $taskRoleArn = $taskRoleArn.Trim()
-    $td.taskRoleArn = $taskRoleArn
-} else {
-    $null = $td.PSObject.Properties.Remove("taskRoleArn")
+    $taskRoleLine = "  ""taskRoleArn"": ""$(Escape-JsonString $taskRoleArn)"","
 }
 
-$td.containerDefinitions[0].name = $ContainerName
-$td.containerDefinitions[0].image = $image
-$td.containerDefinitions[0].environment = @(
-    @{ name = "SPRING_PROFILES_ACTIVE"; value = "prod" },
-    @{ name = "SPRING_DATASOURCE_URL"; value = $jdbcUrl },
-    @{ name = "SPRING_DATASOURCE_USERNAME"; value = $DbUsername }
-)
-$td.containerDefinitions[0].secrets = @(
-    @{ name = "SPRING_DATASOURCE_PASSWORD"; valueFrom = $RdsPasswordSecretArn },
-    @{ name = "CONNTO_JWT_SECRET"; valueFrom = $JwtSecretArn }
-)
-$td.containerDefinitions[0].logConfiguration.options."awslogs-group" = $LogGroup
-$td.containerDefinitions[0].logConfiguration.options."awslogs-region" = $Region
-
-# Windows AWS CLI does not support file://- (stdin); use a file under infra + resolved long path.
-$tmp = Join-Path $PSScriptRoot (".connto-taskdef-" + [Guid]::NewGuid().ToString("n") + ".json")
-$utf8NoBom = New-Object System.Text.UTF8Encoding $false
-[System.IO.File]::WriteAllText($tmp, ($td | ConvertTo-Json -Depth 20), $utf8NoBom)
+# PowerShell ConvertTo-Json breaks ECS API (wrong property names / shapes). Build JSON from template text.
+$templateRaw = Get-Content -LiteralPath $templatePath -Raw -Encoding UTF8
+$taskDefJson = $templateRaw.Replace("__TASK_FAMILY__", (Escape-JsonString $TaskFamily))
+$taskDefJson = $taskDefJson.Replace("__CPU__", (Escape-JsonString $Cpu))
+$taskDefJson = $taskDefJson.Replace("__MEMORY__", (Escape-JsonString $Memory))
+$taskDefJson = $taskDefJson.Replace("__EXECUTION_ROLE_ARN__", (Escape-JsonString $executionRoleArn))
+$taskDefJson = $taskDefJson.Replace("__TASK_ROLE_LINE__", $taskRoleLine)
+$taskDefJson = $taskDefJson.Replace("__CONTAINER_NAME__", (Escape-JsonString $ContainerName))
+$taskDefJson = $taskDefJson.Replace("__IMAGE_URI__", (Escape-JsonString $image))
+$taskDefJson = $taskDefJson.Replace("__JDBC_URL__", (Escape-JsonString $jdbcUrl))
+$taskDefJson = $taskDefJson.Replace("__DB_USERNAME__", (Escape-JsonString $DbUsername))
+$taskDefJson = $taskDefJson.Replace("__RDS_PASSWORD_SECRET_ARN__", (Escape-JsonString $RdsPasswordSecretArn))
+$taskDefJson = $taskDefJson.Replace("__JWT_SECRET_ARN__", (Escape-JsonString $JwtSecretArn))
+$taskDefJson = $taskDefJson.Replace("__LOG_GROUP__", (Escape-JsonString $LogGroup))
+$taskDefJson = $taskDefJson.Replace("__AWS_REGION__", (Escape-JsonString $Region))
 
 try {
-    Write-Host "Registering task definition family $TaskFamily ..."
-    # Pass JSON as argv (not file://). Windows AWS CLI often breaks on file:///C:/... ([Errno 22] Invalid argument).
-    $taskDefJson = [System.IO.File]::ReadAllText($tmp, [System.Text.UTF8Encoding]::new($false))
-    $taskDefArn = & aws @(
-        "ecs", "register-task-definition",
-        "--cli-input-json", $taskDefJson,
-        "--region", $Region,
-        "--query", "taskDefinition.taskDefinitionArn",
-        "--output", "text"
-    )
-    if ($LASTEXITCODE -ne 0) { throw "register-task-definition failed" }
-    Write-Host "Registered: $taskDefArn" -ForegroundColor Green
+    $null = $taskDefJson | ConvertFrom-Json
+} catch {
+    throw "Built invalid task-definition JSON (template substitution). $_"
 }
-finally {
-    Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue
-}
+
+Write-Host "Registering task definition family $TaskFamily ..."
+# Pass JSON as argv. Template + string replace avoids PowerShell ConvertTo-Json (invalid for ECS API).
+$taskDefArn = & aws @(
+    "ecs", "register-task-definition",
+    "--cli-input-json", $taskDefJson,
+    "--region", $Region,
+    "--query", "taskDefinition.taskDefinitionArn",
+    "--output", "text"
+)
+if ($LASTEXITCODE -ne 0) { throw "register-task-definition failed" }
+Write-Host "Registered: $taskDefArn" -ForegroundColor Green
 
 $subnets = ($SubnetIds.Split(",") | ForEach-Object { $_.Trim() }) -join ","
 $sgs = ($SecurityGroupIds.Split(",") | ForEach-Object { $_.Trim() }) -join ","
