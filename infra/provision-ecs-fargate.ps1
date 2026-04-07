@@ -110,9 +110,15 @@ $utf8NoBom = New-Object System.Text.UTF8Encoding $false
 
 try {
     Write-Host "Registering task definition family $TaskFamily ..."
-    $fullPath = (Resolve-Path -LiteralPath $tmp).Path
-    $fileUri = "file:///" + ($fullPath -replace "\\", "/")
-    $taskDefArn = aws ecs register-task-definition --cli-input-json $fileUri --region $Region --query taskDefinition.taskDefinitionArn --output text
+    # Pass JSON as argv (not file://). Windows AWS CLI often breaks on file:///C:/... ([Errno 22] Invalid argument).
+    $taskDefJson = [System.IO.File]::ReadAllText($tmp, [System.Text.UTF8Encoding]::new($false))
+    $taskDefArn = & aws @(
+        "ecs", "register-task-definition",
+        "--cli-input-json", $taskDefJson,
+        "--region", $Region,
+        "--query", "taskDefinition.taskDefinitionArn",
+        "--output", "text"
+    )
     if ($LASTEXITCODE -ne 0) { throw "register-task-definition failed" }
     Write-Host "Registered: $taskDefArn" -ForegroundColor Green
 }

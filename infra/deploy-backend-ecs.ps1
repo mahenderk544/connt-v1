@@ -83,13 +83,14 @@ $utf8NoBom = New-Object System.Text.UTF8Encoding $false
 [System.IO.File]::WriteAllText($tmp, $newJson, $utf8NoBom)
 
 try {
-    $fullPath = (Resolve-Path -LiteralPath $tmp).Path
-    $fileUri = "file:///" + ($fullPath -replace "\\", "/")
-    $newArn = aws ecs register-task-definition `
-        --cli-input-json $fileUri `
-        --region $Region `
-        --query taskDefinition.taskDefinitionArn `
-        --output text
+    $newJsonText = [System.IO.File]::ReadAllText($tmp, [System.Text.UTF8Encoding]::new($false))
+    $newArn = & aws @(
+        "ecs", "register-task-definition",
+        "--cli-input-json", $newJsonText,
+        "--region", $Region,
+        "--query", "taskDefinition.taskDefinitionArn",
+        "--output", "text"
+    )
 
     if ($LASTEXITCODE -ne 0) {
         throw "register-task-definition failed."
