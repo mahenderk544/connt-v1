@@ -11,6 +11,9 @@ backend/target/
 *.env
 !*.env.example
 
+# Infra: temp trust policy JSON from create-ecs-task-execution-role.ps1 (deleted after use; ignore if left over)
+infra/.ecs-trust-policy-*.json
+
 # OS / IDE
 .DS_Store
 Thumbs.db
