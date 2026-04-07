@@ -13,6 +13,8 @@
 #     -JwtSecretArn "arn:aws:secretsmanager:ap-south-1:798335328181:secret:connto/jwt-xxx"
 #
 # Public IP: use -AssignPublicIp ENABLED if tasks are in public subnets (quick test). Use DISABLED with NAT/private + RDS.
+#
+# If you see "ecsTaskExecutionRole cannot be found", run first: .\create-ecs-task-execution-role.ps1
 
 param(
     [string] $Region = "ap-south-1",
@@ -54,8 +56,19 @@ if (-not (Test-Path $templatePath)) {
 $account = (aws sts get-caller-identity --query Account --output text).Trim()
 if (-not $account) { throw "AWS CLI not configured." }
 
-$executionRoleArn = (aws iam get-role --role-name $ExecutionRoleName --query Role.Arn --output text).Trim()
-if ($LASTEXITCODE -ne 0) { throw "IAM role not found: $ExecutionRoleName (create ecsTaskExecutionRole or fix name)." }
+$executionRoleArn = aws iam get-role --role-name $ExecutionRoleName --query Role.Arn --output text 2>$null
+if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($executionRoleArn)) {
+    throw @"
+IAM role not found: $ExecutionRoleName
+
+Create the standard Fargate execution role, then run this script again:
+  cd infra
+  .\create-ecs-task-execution-role.ps1
+
+Or use a different role name: -ExecutionRoleName YourRoleName
+"@
+}
+$executionRoleArn = $executionRoleArn.Trim()
 
 $image = "${account}.dkr.ecr.${Region}.amazonaws.com/${EcrRepositoryName}:${ImageTag}"
 $jdbcUrl = "jdbc:postgresql://${RdsEndpoint}:5432/${DbName}?sslmode=require"
@@ -68,8 +81,9 @@ $td.cpu = $Cpu
 $td.memory = $Memory
 $td.executionRoleArn = $executionRoleArn
 if ($TaskRoleName) {
-    $taskRoleArn = (aws iam get-role --role-name $TaskRoleName --query Role.Arn --output text).Trim()
-    if ($LASTEXITCODE -ne 0) { throw "IAM role not found: $TaskRoleName" }
+    $taskRoleArn = aws iam get-role --role-name $TaskRoleName --query Role.Arn --output text 2>$null
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($taskRoleArn)) { throw "IAM role not found: $TaskRoleName" }
+    $taskRoleArn = $taskRoleArn.Trim()
     $td.taskRoleArn = $taskRoleArn
 } else {
     $null = $td.PSObject.Properties.Remove("taskRoleArn")
