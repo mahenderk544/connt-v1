@@ -75,6 +75,37 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Fails fast with readable errors (common reason for a red X on the commit)
+      - name: Check required GitHub variables
+        env:
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+          ECS_SERVICE: ${{ vars.ECS_SERVICE }}
+          ECS_TASK_DEFINITION: ${{ vars.ECS_TASK_DEFINITION }}
+        run: |
+          ok=true
+          for var in ECR_REPOSITORY ECS_CLUSTER ECS_SERVICE ECS_TASK_DEFINITION; do
+            v=$(printenv "$var" 2>/dev/null || true)
+            if [ -z "$v" ]; then
+              echo "::error::Missing repository variable: $var — GitHub → Settings → Secrets and variables → Actions → Variables"
+              ok=false
+            fi
+          done
+          if [ "$ok" != true ]; then
+            echo ""
+            echo "Create these Variables (names must match exactly), then re-run the workflow."
+            exit 1
+          fi
+          echo "Required variables are set."
+
+      - name: Auth mode (read this if AWS login fails)
+        run: |
+          if [ "${{ vars.AWS_USE_OIDC }}" = "true" ]; then
+            echo "Mode: OIDC — secret AWS_ROLE_TO_ASSUME must be set; IAM trust must allow repo ${{ github.repository }}"
+          else
+            echo "Mode: access keys — secrets AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY must be set under Repository secrets"
+          fi
+
       - name: Configure AWS credentials (OIDC)
         if: ${{ vars.AWS_USE_OIDC == 'true' }}
         uses: aws-actions/configure-aws-credentials@v4
