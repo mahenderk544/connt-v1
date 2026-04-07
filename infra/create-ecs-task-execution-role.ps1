@@ -7,6 +7,8 @@
 #   .\create-ecs-task-execution-role.ps1
 #
 # Then re-run .\provision-ecs-fargate.ps1
+#
+# Note: Trust policy is passed inline (not file://) so AWS CLI on Windows avoids Temp short-path bugs.
 
 param(
     [string] $RoleName = "ecsTaskExecutionRole"
@@ -14,51 +16,31 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$trust = @'
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": { "Service": "ecs-tasks.amazonaws.com" },
-      "Action": "sts:AssumeRole"
-    }
-  ]
-}
-'@
+# Single-line JSON — reliable for aws cli on Windows (no file:// path / 8.3 names).
+$trustPolicy = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ecs-tasks.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
 
-$tmp = Join-Path $env:TEMP "ecs-trust-$([Guid]::NewGuid().ToString('n')).json"
-$utf8 = New-Object System.Text.UTF8Encoding $false
-[System.IO.File]::WriteAllText($tmp, $trust.Trim(), $utf8)
+# IAM get-role writes NoSuchEntity to stderr when missing
+$prevEa = $ErrorActionPreference
+$ErrorActionPreference = "SilentlyContinue"
+aws iam get-role --role-name $RoleName --output json *> $null
+$getRoleExit = $LASTEXITCODE
+$ErrorActionPreference = $prevEa
 
-try {
-    # AWS CLI prints NoSuchEntity to stderr; with $ErrorActionPreference Stop, PowerShell treats that as a failing error.
-    $prevEa = $ErrorActionPreference
-    $ErrorActionPreference = "SilentlyContinue"
-    aws iam get-role --role-name $RoleName --output json *> $null
-    $getRoleExit = $LASTEXITCODE
-    $ErrorActionPreference = $prevEa
-
-    if ($getRoleExit -eq 0) {
-        Write-Host "Role $RoleName already exists." -ForegroundColor Green
-        aws iam get-role --role-name $RoleName --query Role.Arn --output text
-        exit 0
-    }
-
-    Write-Host "Creating IAM role $RoleName ..."
-    $trustUri = "file:///" + (($tmp -replace "\\", "/") -replace "^([A-Za-z]):/", '$1:/')
-    aws iam create-role --role-name $RoleName --assume-role-policy-document $trustUri | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "create-role failed" }
-
-    aws iam attach-role-policy `
-        --role-name $RoleName `
-        --policy-arn "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy" | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "attach-role-policy failed" }
-
-    Write-Host "Attached AmazonECSTaskExecutionRolePolicy (ECR, logs, Secrets for task definitions)." -ForegroundColor Green
-    Write-Host "Role ARN:" -ForegroundColor Cyan
+if ($getRoleExit -eq 0) {
+    Write-Host "Role $RoleName already exists." -ForegroundColor Green
     aws iam get-role --role-name $RoleName --query Role.Arn --output text
+    exit 0
 }
-finally {
-    Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue
-}
+
+Write-Host "Creating IAM role $RoleName ..."
+aws iam create-role --role-name $RoleName --assume-role-policy-document $trustPolicy | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "create-role failed" }
+
+aws iam attach-role-policy `
+    --role-name $RoleName `
+    --policy-arn "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy" | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "attach-role-policy failed" }
+
+Write-Host "Attached AmazonECSTaskExecutionRolePolicy (ECR, logs, Secrets for task definitions)." -ForegroundColor Green
+Write-Host "Role ARN:" -ForegroundColor Cyan
+aws iam get-role --role-name $RoleName --query Role.Arn --output text

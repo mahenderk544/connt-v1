@@ -82,10 +82,8 @@ $utf8NoBom = New-Object System.Text.UTF8Encoding $false
 [System.IO.File]::WriteAllText($tmp, $newJson, $utf8NoBom)
 
 try {
-    $tmpForCli = "file:///" + ($tmp -replace "\\", "/")
-
-    $newArn = aws ecs register-task-definition `
-        --cli-input-json $tmpForCli `
+    $newArn = [System.IO.File]::ReadAllText($tmp) | aws ecs register-task-definition `
+        --cli-input-json "file://-" `
         --region $Region `
         --query taskDefinition.taskDefinitionArn `
         --output text

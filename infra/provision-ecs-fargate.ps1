@@ -109,8 +109,9 @@ $utf8NoBom = New-Object System.Text.UTF8Encoding $false
 
 try {
     Write-Host "Registering task definition family $TaskFamily ..."
-    $tmpUri = "file:///" + (($tmp -replace "\\", "/") -replace "^([A-Za-z]):/", '$1:/')
-    $taskDefArn = aws ecs register-task-definition --cli-input-json $tmpUri --region $Region --query taskDefinition.taskDefinitionArn --output text
+    # Avoid file:// under %TEMP% on Windows (8.3 short paths break AWS CLI file loading).
+    $taskDefJson = [System.IO.File]::ReadAllText($tmp)
+    $taskDefArn = $taskDefJson | aws ecs register-task-definition --cli-input-json "file://-" --region $Region --query taskDefinition.taskDefinitionArn --output text
     if ($LASTEXITCODE -ne 0) { throw "register-task-definition failed" }
     Write-Host "Registered: $taskDefArn" -ForegroundColor Green
 }
