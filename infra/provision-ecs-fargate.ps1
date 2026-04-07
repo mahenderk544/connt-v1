@@ -89,7 +89,15 @@ if ($TaskRoleName) {
 }
 
 # PowerShell ConvertTo-Json breaks ECS API (wrong property names / shapes). Build JSON from template text.
-$templateRaw = Get-Content -LiteralPath $templatePath -Raw -Encoding UTF8
+# Read bytes so we skip UTF-8 BOM — a leading BOM makes AWS CLI report "Invalid JSON" while ConvertFrom-Json may still pass.
+$templateBytes = [System.IO.File]::ReadAllBytes($templatePath)
+$templateOff = 0
+if ($templateBytes.Length -ge 3 -and $templateBytes[0] -eq 0xEF -and $templateBytes[1] -eq 0xBB -and $templateBytes[2] -eq 0xBF) {
+    $templateOff = 3
+}
+$utf8Strict = [System.Text.UTF8Encoding]::new($false)
+$templateRaw = $utf8Strict.GetString($templateBytes, $templateOff, $templateBytes.Length - $templateOff)
+
 $taskDefJson = $templateRaw.Replace("__TASK_FAMILY__", (Escape-JsonString $TaskFamily))
 $taskDefJson = $taskDefJson.Replace("__CPU__", (Escape-JsonString $Cpu))
 $taskDefJson = $taskDefJson.Replace("__MEMORY__", (Escape-JsonString $Memory))
@@ -111,15 +119,25 @@ try {
 }
 
 Write-Host "Registering task definition family $TaskFamily ..."
-# Pass JSON as argv. Template + string replace avoids PowerShell ConvertTo-Json (invalid for ECS API).
-$taskDefArn = & aws @(
-    "ecs", "register-task-definition",
-    "--cli-input-json", $taskDefJson,
-    "--region", $Region,
-    "--query", "taskDefinition.taskDefinitionArn",
-    "--output", "text"
-)
-if ($LASTEXITCODE -ne 0) { throw "register-task-definition failed" }
+# Write UTF-8 no BOM and pass file:// path — passing huge JSON as argv often corrupts on Windows.
+$submitPath = Join-Path $PSScriptRoot "connto-taskdef-submit.json"
+[System.IO.File]::WriteAllText($submitPath, $taskDefJson, $utf8Strict)
+$fullSubmit = (Resolve-Path -LiteralPath $submitPath).Path
+# AWS CLI on Windows: file://C:/path (two slashes after file:)
+$fileArg = "file://" + ($fullSubmit -replace "\\", "/")
+
+Push-Location $PSScriptRoot
+try {
+    $taskDefArn = aws ecs register-task-definition `
+        --cli-input-json $fileArg `
+        --region $Region `
+        --query taskDefinition.taskDefinitionArn `
+        --output text
+    if ($LASTEXITCODE -ne 0) { throw "register-task-definition failed" }
+} finally {
+    Pop-Location
+}
+
 Write-Host "Registered: $taskDefArn" -ForegroundColor Green
 
 $subnets = ($SubnetIds.Split(",") | ForEach-Object { $_.Trim() }) -join ","

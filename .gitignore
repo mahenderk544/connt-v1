@@ -15,6 +15,7 @@ backend/target/
 infra/.ecs-trust-policy-*.json
 infra/.connto-taskdef-*.json
 infra/.ecs-td-*.json
+infra/connto-taskdef-submit.json
 
 # OS / IDE
 .DS_Store
