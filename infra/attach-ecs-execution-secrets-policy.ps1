@@ -1,5 +1,5 @@
-# Attach inline IAM policy so ecsTaskExecutionRole can read Secrets Manager values used in the task definition.
-# Fixes: AccessDeniedException on secretsmanager:GetSecretValue for assumed-role/ecsTaskExecutionRole/...
+# Attach inline IAM policy: ECR pull + CloudWatch logs + Secrets Manager (full ecsTaskExecutionRole baseline).
+# Fixes: ResourceInitializationError for ecr:GetAuthorizationToken, secrets GetSecretValue, or missing log permissions.
 #
 # Usage (from infra):
 #   .\attach-ecs-execution-secrets-policy.ps1
