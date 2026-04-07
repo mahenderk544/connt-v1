@@ -1,0 +1,117 @@
+# Deploy backend to AWS ECS when you push Git changes under backend/
+#
+# One-time AWS setup (console or IaC):
+#   - ECR repository
+#   - ECS cluster + Fargate (or EC2) service with an initial task definition
+#   - Task execution role (ECR pull, logs); task role if your app needs AWS APIs
+#   - RDS/security groups as already configured
+#
+# GitHub repo → Settings → Secrets and variables → Actions
+#   Secrets:
+#     AWS_ACCESS_KEY_ID
+#     AWS_SECRET_ACCESS_KEY
+#   Variables (Repository variables):
+#     AWS_REGION            e.g. ap-south-1
+#     ECR_REPOSITORY        e.g. connto-backend
+#     ECS_CLUSTER           cluster name
+#     ECS_SERVICE           service name
+#     ECS_TASK_DEFINITION   task definition family name (same as in ECS console)
+#
+# Optional: replace access keys with OIDC (aws-actions/configure-aws-credentials + IAM role).
+
+name: Backend — ECR & ECS deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ecs-deploy.yml"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'ap-south-1' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        id: build
+        working-directory: backend
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+        run: |
+          set -euo pipefail
+          test -n "${REGISTRY}"
+          test -n "${REPOSITORY}"
+          IMAGE_URI="${REGISTRY}/${REPOSITORY}:${GITHUB_SHA}"
+          docker build -t "${IMAGE_URI}" -t "${REGISTRY}/${REPOSITORY}:latest" .
+          docker push "${IMAGE_URI}"
+          docker push "${REGISTRY}/${REPOSITORY}:latest"
+          echo "image=${IMAGE_URI}" >> "${GITHUB_OUTPUT}"
+
+      - name: Register task definition and update ECS service
+        env:
+          CLUSTER: ${{ vars.ECS_CLUSTER }}
+          SERVICE: ${{ vars.ECS_SERVICE }}
+          FAMILY: ${{ vars.ECS_TASK_DEFINITION }}
+          IMAGE: ${{ steps.build.outputs.image }}
+        run: |
+          set -euo pipefail
+          test -n "${CLUSTER}"
+          test -n "${SERVICE}"
+          test -n "${FAMILY}"
+          test -n "${IMAGE}"
+
+          aws ecs describe-task-definition \
+            --task-definition "${FAMILY}" \
+            --query taskDefinition \
+            --output json > td.json
+
+          jq --arg img "${IMAGE}" \
+            'del(
+              .taskDefinitionArn,
+              .revision,
+              .status,
+              .requiresAttributes,
+              .compatibilities,
+              .registeredAt,
+              .registeredBy,
+              .deregisteredAt,
+              .deregisteredBy
+            )
+            | .containerDefinitions[0].image = $img' \
+            td.json > new-td.json
+
+          NEW_ARN="$(aws ecs register-task-definition \
+            --cli-input-json file://new-td.json \
+            --query taskDefinition.taskDefinitionArn \
+            --output text)"
+
+          aws ecs update-service \
+            --cluster "${CLUSTER}" \
+            --service "${SERVICE}" \
+            --task-definition "${NEW_ARN}" \
+            --force-new-deployment
+
+          echo "Deployed ${IMAGE} as ${NEW_ARN}"

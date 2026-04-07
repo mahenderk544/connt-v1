@@ -1,0 +1,30 @@
+# =============================================================================
+# LOCAL / DEV OVERRIDES (secrets stay off Git)
+# 1. Copy this file to: application-local.yml  (same folder)
+# 2. Replace placeholders below with your RDS (or local Postgres) values.
+# 3. Run with profile "local", e.g.:
+#      SPRING_PROFILES_ACTIVE=local
+#    or IDE: Active profiles = local
+#    or:    mvn spring-boot:run -Dspring-boot.run.profiles=local
+#
+# application-local.yml is listed in repo .gitignore — do not commit it.
+# =============================================================================
+
+spring:
+  datasource:
+    # RDS example (use your endpoint; keep ?sslmode=require for AWS):
+    url: jdbc:postgresql://connto-db.ctao0ie0kmyu.ap-south-1.rds.amazonaws.com:5432/connto?sslmode=require
+    username: connto
+    password: MustTry$12345
+
+# Same JWT secret every run so tokens stay valid while you develop
+connto:
+  jwt:
+    secret: 8f3c2a19e704b56d91a4f0c83e7d2b6a5c901234f8e7d6c5b4a39281706f5e4d
+  otp:
+    # Safe for local testing without SMS; never enable in production
+    dev-return-code: true
+
+logging:
+  level:
+    com.connto: DEBUG

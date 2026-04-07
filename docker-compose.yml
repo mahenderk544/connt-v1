@@ -1,0 +1,22 @@
+# Start before the Spring Boot app: docker compose up -d
+# Matches backend application.yml: DB connto / user connto / password connto / port 5432
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: connto
+      POSTGRES_USER: connto
+      POSTGRES_PASSWORD: connto
+    ports:
+      - "5432:5432"
+    volumes:
+      - connto_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U connto -d connto"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  connto_pg:
