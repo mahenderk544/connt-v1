@@ -11,6 +11,10 @@
 # =============================================================================
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 4MB
+      max-request-size: 4MB
   datasource:
     # RDS example (use your endpoint; keep ?sslmode=require for AWS):
     url: jdbc:postgresql://connto-db.ctao0ie0kmyu.ap-south-1.rds.amazonaws.com:5432/connto?sslmode=require
@@ -21,9 +25,22 @@ spring:
 connto:
   jwt:
     secret: 8f3c2a19e704b56d91a4f0c83e7d2b6a5c901234f8e7d6c5b4a39281706f5e4d
+    expiration-ms: 86400000
   otp:
+    ttl-seconds: 300
+    max-attempts: 5
     # Safe for local testing without SMS; never enable in production
     dev-return-code: true
+  media:
+    voice-upload-dir: uploads/voice
+  wallet:
+    # UPI opens PhonePe / GPay / Paytm with amount prefilled (set your real VPA).
+    payment-provider: UPI
+    upi-vpa: ${CONNTO_WALLET_UPI_VPA:}
+    upi-payee-name: Connto
+    # After paying in UPI app, user taps I've paid (turn off when Razorpay webhook credits wallet).
+    upi-client-confirm-enabled: true
+    mock-complete-enabled: true
 
 logging:
   level:

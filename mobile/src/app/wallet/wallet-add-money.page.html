@@ -1,0 +1,83 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/wallet"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Add money</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="add-money">
+  <div class="add-hero">
+    <h1>Select an offer</h1>
+    <p>
+      Amounts and talk minutes come from the server. After you pick one, pay with <strong>UPI</strong> (Google Pay,
+      PhonePe, Paytm, etc.).
+    </p>
+  </div>
+
+  <ion-spinner *ngIf="loadingOffers" class="ion-margin"></ion-spinner>
+
+  <div class="offers-grid" *ngIf="!loadingOffers && !pending">
+    <button
+      type="button"
+      class="offer-card"
+      *ngFor="let o of offers"
+      [disabled]="busy"
+      (click)="pickOffer(o)"
+    >
+      <span class="offer-line">{{ offerSummary(o) }}</span>
+      <span class="offer-tag" *ngIf="o.label">{{ o.label }}</span>
+    </button>
+  </div>
+
+  <div *ngIf="pending" class="checkout-panel ion-padding">
+    <h2>Pay with UPI</h2>
+    <p class="checkout-line">
+      <strong>{{ offerSummaryFromPending() }}</strong>
+    </p>
+    <p *ngIf="pending.offerLabel" class="checkout-sub">{{ pending.offerLabel }}</p>
+
+    <ion-button
+      *ngIf="pending.upiDeepLink"
+      expand="block"
+      color="success"
+      class="upi-primary"
+      (click)="openUpiApp()"
+      [disabled]="busy"
+    >
+      <ion-icon slot="start" name="phone-portrait-outline" aria-hidden="true"></ion-icon>
+      Open UPI app · ₹{{ rupees(pending.amountPaise) }}
+    </ion-button>
+
+    <ion-button
+      *ngIf="pending.upiConfirmAllowed"
+      expand="block"
+      fill="outline"
+      color="primary"
+      (click)="completeUpiPaid()"
+      [disabled]="busy"
+    >
+      I've paid in UPI — update wallet
+    </ion-button>
+
+    <p class="gateway-msg" *ngIf="pending.clientMessage">{{ pending.clientMessage }}</p>
+
+    <ion-chip color="medium" outline="true" class="provider-chip">Mode: {{ pending.paymentProvider }}</ion-chip>
+
+    <ion-button
+      *ngIf="pending.paymentProvider.toUpperCase() === 'MOCK'"
+      expand="block"
+      fill="outline"
+      color="medium"
+      (click)="completeMockPay()"
+      [disabled]="busy"
+    >
+      Simulated pay (dev)
+    </ion-button>
+
+    <ion-button expand="block" fill="clear" color="medium" (click)="cancelPending()" [disabled]="busy">
+      Choose another offer
+    </ion-button>
+  </div>
+</ion-content>

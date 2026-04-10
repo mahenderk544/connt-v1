@@ -1,0 +1,100 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/connect"></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ peerName }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="openCall('voice')" aria-label="Voice call">
+        <ion-icon slot="icon-only" name="call-outline"></ion-icon>
+      </ion-button>
+      <ion-button (click)="openCall('video')" aria-label="Video call">
+        <ion-icon slot="icon-only" name="videocam-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="thread" #content>
+  <div class="banner ion-padding" *ngIf="loading">
+    <ion-spinner></ion-spinner>
+  </div>
+
+  <div class="ion-padding thread-inner">
+    <div
+      *ngFor="let m of messages"
+      class="bubble-wrap"
+      [class.mine]="isMine(m)"
+    >
+      <div class="bubble">
+        <p>{{ m.body }}</p>
+        <time>{{ m.createdAt | date: 'shortTime' }}</time>
+      </div>
+    </div>
+  </div>
+</ion-content>
+
+<ion-footer>
+  <ion-toolbar>
+    <ion-item lines="none">
+      <ion-textarea
+        [(ngModel)]="draft"
+        placeholder="Message"
+        rows="1"
+        autoGrow="true"
+        (keydown.enter)="$event.preventDefault(); send()"
+      ></ion-textarea>
+      <ion-button slot="end" (click)="send()" [disabled]="!draft.trim()">Send</ion-button>
+    </ion-item>
+  </ion-toolbar>
+</ion-footer>
+
+<ion-modal [isOpen]="callOpen" [backdropDismiss]="false">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>{{ callKind === 'video' ? 'Video' : 'Voice' }} call</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="endCallUi()">End</ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding call-body">
+      <p class="call-hint" *ngIf="incomingRing">
+        Incoming call — both of you need this chat open for the first version (signaling over WebSocket).
+      </p>
+      <div class="call-stage">
+        <video
+          #remoteVideo
+          *ngIf="callKind === 'video'"
+          class="remote-video"
+          playsinline
+          autoplay
+        ></video>
+        <div class="avatar-ring" [class.video]="callKind === 'video'" *ngIf="callKind === 'voice' || !callConnected">
+          <span>{{ peerName.charAt(0).toUpperCase() }}</span>
+        </div>
+        <h2>{{ peerName }}</h2>
+        <div *ngIf="incomingRing" class="incoming-actions">
+          <ion-button expand="block" color="success" (click)="acceptIncomingCall()">Accept</ion-button>
+          <ion-button expand="block" fill="outline" color="medium" (click)="declineIncomingCall()">Decline</ion-button>
+        </div>
+        <p class="status" *ngIf="!incomingRing && !callConnected">Calling… waiting for friend to accept</p>
+        <p class="status live" *ngIf="callConnected">Connected · {{ formatDuration(callSeconds) }}</p>
+      </div>
+      <div class="call-actions" *ngIf="!incomingRing">
+        <ion-button fill="clear" color="medium">
+          <ion-icon slot="start" name="mic-outline"></ion-icon>
+          Mute
+        </ion-button>
+        <ion-button color="danger" shape="round" (click)="endCallUi()">
+          <ion-icon slot="icon-only" name="call-outline"></ion-icon>
+        </ion-button>
+        <ion-button fill="clear" color="medium" *ngIf="callKind === 'voice'">
+          <ion-icon slot="start" name="volume-high-outline"></ion-icon>
+          Speaker
+        </ion-button>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>

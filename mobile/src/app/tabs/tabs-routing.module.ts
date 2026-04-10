@@ -4,33 +4,34 @@ import { TabsPage } from './tabs.page';
 
 const routes: Routes = [
   {
-    path: 'tabs',
+    path: '',
     component: TabsPage,
     children: [
       {
-        path: 'tab1',
-        loadChildren: () => import('../tab1/tab1.module').then(m => m.Tab1PageModule)
+        path: 'connect',
+        loadChildren: () => import('../connect/connect.module').then(m => m.ConnectPageModule),
       },
       {
-        path: 'tab2',
-        loadChildren: () => import('../tab2/tab2.module').then(m => m.Tab2PageModule)
+        path: 'profile',
+        loadChildren: () =>
+          import('../profile-tab/profile-tab.module').then(m => m.ProfileTabPageModule),
       },
       {
-        path: 'tab3',
-        loadChildren: () => import('../tab3/tab3.module').then(m => m.Tab3PageModule)
+        path: 'wallet',
+        loadChildren: () => import('../wallet/wallet.module').then(m => m.WalletPageModule),
+      },
+      {
+        path: 'chat/:peerId',
+        loadChildren: () =>
+          import('../chat-thread/chat-thread.module').then(m => m.ChatThreadPageModule),
       },
       {
         path: '',
-        redirectTo: '/tabs/tab1',
-        pathMatch: 'full'
-      }
-    ]
+        redirectTo: 'connect',
+        pathMatch: 'full',
+      },
+    ],
   },
-  {
-    path: '',
-    redirectTo: '/tabs/tab1',
-    pathMatch: 'full'
-  }
 ];
 
 @NgModule({

@@ -1,0 +1,46 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Connto</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="hero">
+    <h1>Sign in</h1>
+    <p class="muted">We’ll text you a one-time code to verify your phone.</p>
+  </div>
+
+  <ion-segment [(ngModel)]="mode" [disabled]="busy">
+    <ion-segment-button value="LOGIN">
+      <ion-label>Sign in</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="REGISTER">
+      <ion-label>Create account</ion-label>
+    </ion-segment-button>
+  </ion-segment>
+
+  <ion-list inset="true" class="ion-margin-top">
+    <ion-item>
+      <ion-input label="Phone" labelPlacement="stacked" type="tel" [(ngModel)]="phone" placeholder="+1…"></ion-input>
+    </ion-item>
+    <ion-item *ngIf="mode === 'REGISTER'">
+      <ion-input
+        label="Display name"
+        labelPlacement="stacked"
+        [(ngModel)]="displayName"
+        placeholder="How you appear to others"
+      ></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-input label="6-digit code" labelPlacement="stacked" inputmode="numeric" maxlength="6" [(ngModel)]="otp"></ion-input>
+    </ion-item>
+  </ion-list>
+
+  <ion-button expand="block" class="ion-margin-top" (click)="requestOtp()" [disabled]="busy">
+    {{ otpSent ? 'Resend code' : 'Send code' }}
+  </ion-button>
+
+  <ion-button expand="block" color="primary" (click)="submit()" [disabled]="busy">
+    {{ mode === 'REGISTER' ? 'Create account' : 'Sign in' }}
+  </ion-button>
+</ion-content>

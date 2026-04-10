@@ -1,0 +1,220 @@
+{
+  "info": {
+    "name": "Connto Backend",
+    "description": "API base path /api/v1. Auth: Bearer JWT on protected routes. OTP: use devCode from /auth/otp/request when connto.otp.dev-return-code is true.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "token", "value": "" },
+    { "key": "peerUserId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET actuator health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/actuator/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth (no JWT)",
+      "item": [
+        {
+          "name": "POST request OTP — REGISTER",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919999999999\",\n  \"purpose\": \"REGISTER\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/otp/request"
+          }
+        },
+        {
+          "name": "POST request OTP — LOGIN",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919999999999\",\n  \"purpose\": \"LOGIN\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/otp/request"
+          }
+        },
+        {
+          "name": "POST register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919999999999\",\n  \"otp\": \"123456\",\n  \"displayName\": \"Test User\",\n  \"password\": \"optional8+\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/register"
+          }
+        },
+        {
+          "name": "POST login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919999999999\",\n  \"otp\": \"123456\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profile (JWT)",
+      "auth": {
+        "type": "bearer",
+        "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+      },
+      "item": [
+        {
+          "name": "GET my profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/me/profile"
+          }
+        },
+        {
+          "name": "PATCH my profile",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"Updated Name\",\n  \"bio\": \"Hello\",\n  \"tags\": \"tag1,tag2\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/me/profile"
+          }
+        },
+        {
+          "name": "GET user profile by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/users/{{peerUserId}}/profile"
+          }
+        },
+        {
+          "name": "GET users search",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/search?q=test",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "search"],
+              "query": [{ "key": "q", "value": "test" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Connections (JWT)",
+      "auth": {
+        "type": "bearer",
+        "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+      },
+      "item": [
+        {
+          "name": "POST send connection request",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"toUserId\": \"00000000-0000-0000-0000-000000000000\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/connections/requests"
+          }
+        },
+        {
+          "name": "GET incoming requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/connections/requests/incoming"
+          }
+        },
+        {
+          "name": "GET outgoing requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/connections/requests/outgoing"
+          }
+        },
+        {
+          "name": "POST accept request",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/connections/requests/00000000-0000-0000-0000-000000000000/accept"
+          }
+        },
+        {
+          "name": "POST decline request",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/connections/requests/00000000-0000-0000-0000-000000000000/decline"
+          }
+        },
+        {
+          "name": "GET friends",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/connections/friends"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Messages (JWT)",
+      "auth": {
+        "type": "bearer",
+        "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+      },
+      "item": [
+        {
+          "name": "GET thread with peer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/messages/thread/{{peerUserId}}"
+          }
+        },
+        {
+          "name": "POST send message",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"toUserId\": \"00000000-0000-0000-0000-000000000000\",\n  \"body\": \"Hello\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/messages"
+          }
+        }
+      ]
+    }
+  ]
+}

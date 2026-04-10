@@ -1,0 +1,4 @@
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS voice_intro_url VARCHAR(1024);
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS communication_tone VARCHAR(240);
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS behaviours_summary TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS expecting_for TEXT;

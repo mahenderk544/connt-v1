@@ -8,6 +8,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import java.util.List;
 import org.springframework.security.config.Customizer;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -77,6 +78,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(
                         auth ->
                                 auth.requestMatchers("/api/v1/auth/**")
+                                        .permitAll()
+                                        .requestMatchers(HttpMethod.GET, "/api/v1/media/voice/**")
+                                        .permitAll()
+                                        .requestMatchers("/ws/call")
                                         .permitAll()
                                         .requestMatchers("/actuator/health", "/error")
                                         .permitAll()

@@ -4,32 +4,32 @@ import com.connto.backend.domain.AppUser;
 import com.connto.backend.domain.DirectMessage;
 import com.connto.backend.repository.AppUserRepository;
 import com.connto.backend.repository.DirectMessageRepository;
-import com.connto.backend.repository.FriendshipRepository;
 import com.connto.backend.web.ApiException;
-import jakarta.transaction.Transactional;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class MessageService {
 
     private final DirectMessageRepository messages;
-    private final FriendshipRepository friendships;
+    private final ConnectionService connections;
     private final AppUserRepository users;
 
     public MessageService(
             DirectMessageRepository messages,
-            FriendshipRepository friendships,
+            ConnectionService connections,
             AppUserRepository users) {
         this.messages = messages;
-        this.friendships = friendships;
+        this.connections = connections;
         this.users = users;
     }
 
+    @Transactional(readOnly = true)
     public List<MessageResponse> thread(UUID me, UUID peer) {
         ensureFriends(me, peer);
         return messages.findThread(me, peer).stream()
@@ -58,9 +58,7 @@ public class MessageService {
     }
 
     private void ensureFriends(UUID a, UUID b) {
-        UUID low = a.compareTo(b) < 0 ? a : b;
-        UUID high = a.compareTo(b) < 0 ? b : a;
-        if (friendships.findByOrderedPair(low, high).isEmpty()) {
+        if (!connections.areConnected(a, b)) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Not connected with this user");
         }
     }

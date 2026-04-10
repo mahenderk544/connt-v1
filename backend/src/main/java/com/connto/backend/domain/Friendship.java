@@ -5,6 +5,7 @@ import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "friendships")
@@ -26,5 +27,18 @@ public class Friendship {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    /** The other participant when {@code me} is one side of this friendship row. */
+    public UUID peerUserId(UUID me) {
+        UUID one = id.getUserOne();
+        UUID two = id.getUserTwo();
+        if (one.equals(me)) {
+            return two;
+        }
+        if (two.equals(me)) {
+            return one;
+        }
+        throw new IllegalStateException("Friendship does not involve the given user");
     }
 }

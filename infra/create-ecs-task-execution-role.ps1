@@ -46,7 +46,7 @@ $utf8NoBom = New-Object System.Text.UTF8Encoding $false
 try {
     [System.IO.File]::WriteAllText($docFile, $trustPolicy, $utf8NoBom)
     $fullPath = (Resolve-Path -LiteralPath $docFile).Path
-    $fileUri = "file:///" + ($fullPath -replace "\\", "/")
+    $fileUri = "file://$fullPath"
 
     Write-Host "Creating IAM role $RoleName ..."
     aws iam create-role --role-name $RoleName --assume-role-policy-document $fileUri | Out-Null

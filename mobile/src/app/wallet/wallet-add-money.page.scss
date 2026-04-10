@@ -1,0 +1,123 @@
+.add-money {
+  --background: #f4f4f5;
+}
+
+.add-hero {
+  padding: 20px 20px 8px;
+
+  h1 {
+    margin: 0 0 10px;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #18181b;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #52525b;
+
+    code {
+      font-size: 0.75rem;
+      background: #e4e4e7;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+  }
+}
+
+.offers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 12px;
+  padding: 12px 16px calc(env(safe-area-inset-bottom, 0px) + 24px);
+}
+
+.offer-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 16px 14px;
+  border-radius: 14px;
+  border: 1px solid #e4e4e7;
+  background: #fff;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover:not(:disabled) {
+    border-color: var(--ion-color-primary, #3880ff);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+}
+
+.offer-line {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #18181b;
+  line-height: 1.35;
+}
+
+.offer-price {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #18181b;
+}
+
+.offer-mins {
+  font-size: 0.8rem;
+  color: #3f3f46;
+  font-weight: 600;
+}
+
+.offer-tag {
+  font-size: 0.72rem;
+  color: var(--ion-color-primary, #3880ff);
+  font-weight: 600;
+}
+
+.checkout-panel {
+  max-width: 420px;
+  margin: 0 auto;
+
+  h2 {
+    margin: 0 0 12px;
+    font-size: 1.2rem;
+  }
+
+  .checkout-line {
+    margin: 0 0 8px;
+    font-size: 1rem;
+    line-height: 1.45;
+  }
+
+  .checkout-sub {
+    margin: 0 0 16px;
+    color: var(--ion-color-medium);
+    font-size: 0.9rem;
+  }
+}
+
+.provider-chip {
+  margin-bottom: 12px;
+}
+
+.gateway-msg {
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: #52525b;
+  margin: 16px 0 12px;
+}
+
+.upi-primary {
+  margin-bottom: 12px;
+  font-weight: 600;
+}

@@ -1,0 +1,132 @@
+.card {
+  text-align: center;
+  padding: 0.5rem 0 1.5rem;
+}
+
+.large {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 1rem;
+}
+
+.large span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 2rem;
+  font-weight: 700;
+  background: var(--ion-color-primary);
+  color: var(--ion-color-primary-contrast);
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 0 0 0.5rem;
+}
+
+.bio {
+  text-align: left;
+  line-height: 1.5;
+  color: var(--ion-color-dark);
+}
+
+.tags {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  color: var(--ion-color-medium);
+  font-size: 0.9rem;
+}
+
+.meta {
+  font-size: 0.75rem;
+  margin-top: 1rem;
+}
+
+.muted {
+  color: var(--ion-color-medium);
+}
+
+.profile-content {
+  --padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+}
+
+.profile-menu {
+  margin-top: 0.5rem;
+}
+
+.profile-menu-danger {
+  margin-top: 0.25rem;
+}
+
+.sign-out-btn {
+  margin-top: 1.25rem;
+}
+
+.footer-version {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--ion-color-medium);
+  margin: 1.5rem 0 0;
+}
+
+.persona-view {
+  text-align: left;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--ion-color-dark);
+
+  p {
+    margin: 0.35rem 0 0;
+  }
+}
+
+.persona-label {
+  display: inline-block;
+  font-weight: 600;
+  margin-right: 6px;
+  color: var(--ion-color-medium);
+  font-size: 0.8rem;
+}
+
+.voice-preview {
+  margin-top: 1rem;
+  text-align: left;
+
+  audio {
+    width: 100%;
+    max-width: 320px;
+    margin-top: 6px;
+  }
+}
+
+.voice-edit-block {
+  --inner-padding-end: 0;
+}
+
+.voice-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.record-timer {
+  color: var(--ion-color-danger);
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.voice-spinner {
+  margin-top: 8px;
+}
+
+.voice-edit-audio {
+  width: 100%;
+  max-width: 320px;
+  margin-top: 12px;
+}

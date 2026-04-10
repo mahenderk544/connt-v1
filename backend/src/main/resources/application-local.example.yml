@@ -21,9 +21,18 @@ spring:
 connto:
   jwt:
     secret: 8f3c2a19e704b56d91a4f0c83e7d2b6a5c901234f8e7d6c5b4a39281706f5e4d
+    expiration-ms: 86400000
   otp:
+    ttl-seconds: 300
+    max-attempts: 5
     # Safe for local testing without SMS; never enable in production
     dev-return-code: true
+  # Wallet: UPI deep link needs your merchant VPA (or set payment-provider: MOCK for simulated pay).
+  wallet:
+    payment-provider: UPI
+    upi-vpa: your-merchant@paytm
+    upi-payee-name: Connto
+    upi-client-confirm-enabled: true
 
 logging:
   level:

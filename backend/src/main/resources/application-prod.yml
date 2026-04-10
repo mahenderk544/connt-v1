@@ -6,14 +6,28 @@
 #   CONNTO_JWT_SECRET  (long random string)
 # Optional:
 #   SERVER_SERVLET_CONTEXT_PATH=/connto
+# Staging/lab only (overrides dev-return-code below): CONNTO_OTP_DEV_RETURN_CODE=true
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 4MB
+      max-request-size: 4MB
   datasource:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
 
 connto:
+  media:
+    # Ephemeral on ECS unless you mount a volume; use object storage for production scale.
+    voice-upload-dir: uploads/voice
+  wallet:
+    payment-provider: RAZORPAY
+    mock-complete-enabled: false
+    upi-vpa: ${CONNTO_WALLET_UPI_VPA:}
+    upi-payee-name: Connto
+    upi-client-confirm-enabled: false
   jwt:
     secret: ${CONNTO_JWT_SECRET}
     expiration-ms: 86400000

@@ -32,6 +32,14 @@ Connto backend on AWS ECS using Docker
    - Cluster: Fargate, awsvpc, subnets + security group (allow 8080 from ALB; outbound to RDS 5432)
    - Service: desired count ≥ 1, load balancer optional (ALB health: GET /actuator/health on port 8080)
 
+4b) Stable public IP (Elastic IP) — Fargate tasks cannot have an EIP; use a Network Load Balancer
+   - cd infra
+   - .\attach-nlb-elastic-ip-ecs.ps1 -SubnetIds "subnet-a,subnet-b" -TaskSecurityGroupId "sg-your-ecs-task-sg"
+   - Use public subnets (one per AZ). Script allocates an EIP per subnet, creates NLB + TCP :80 -> tasks :8080,
+     attaches target group to the ECS service. Base URL: http://<EIP>:80/...
+   - Do not use -DisableTaskPublicIp unless tasks are in private subnets with NAT (ECR pull needs outbound internet).
+   - Script enables NLB cross-zone load balancing so both Elastic IPs work when tasks run in only one AZ.
+
 5) Deploy updates (build + push + new revision + rolling deploy)
    cd infra
    .\deploy-backend-ecs.ps1 -Region ap-south-1 -RepositoryName connto-backend `

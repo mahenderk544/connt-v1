@@ -1,0 +1,34 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/connect"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Wallet</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="wallet-hub">
+  <ion-spinner *ngIf="loading" class="ion-margin"></ion-spinner>
+
+  <div *ngIf="!loading" class="hub-inner">
+    <div class="balance-card">
+      <p class="balance-label">Available balance</p>
+      <p class="balance-value">₹{{ rupees(balancePaise) }}</p>
+    </div>
+
+    <ion-button expand="block" class="ion-margin-horizontal" routerLink="/tabs/wallet/add">
+      <ion-icon slot="start" name="add-circle-outline" aria-hidden="true"></ion-icon>
+      Add money
+    </ion-button>
+
+    <ion-button expand="block" fill="outline" color="medium" class="ion-margin-horizontal" routerLink="/tabs/profile/transactions">
+      <ion-icon slot="start" name="receipt-outline" aria-hidden="true"></ion-icon>
+      Transaction history
+    </ion-button>
+
+    <p class="hub-hint">
+      Top-up packs and talk-time bonuses are configured on the server. Switch payment provider (MOCK, RAZORPAY,
+      STRIPE) in backend config.
+    </p>
+  </div>
+</ion-content>

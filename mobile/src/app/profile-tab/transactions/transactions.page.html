@@ -1,0 +1,34 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/profile"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Transaction history</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="tx-content">
+  <ion-spinner *ngIf="loading" class="ion-margin"></ion-spinner>
+
+  <div *ngIf="!loading && items.length === 0" class="tx-empty">
+    <ion-icon name="receipt-outline" aria-hidden="true"></ion-icon>
+    <h2>No transactions yet</h2>
+    <p>
+      When you add balance or pay for sessions, entries will show up here. Wallet billing is not enabled in
+      this build.
+    </p>
+  </div>
+
+  <ion-list *ngIf="!loading && items.length > 0" inset="true" lines="full">
+    <ion-item *ngFor="let tx of items" class="tx-row">
+      <ion-icon slot="start" name="swap-horizontal-outline" aria-hidden="true"></ion-icon>
+      <ion-label>
+        <h2>{{ tx.label }}</h2>
+        <p>{{ tx.type }} · {{ formatWhen(tx.createdAt) }}</p>
+      </ion-label>
+      <ion-note slot="end" [class.tx-credit]="tx.amountPaise >= 0" [class.tx-debit]="tx.amountPaise < 0">
+        {{ signedRupees(tx) }}
+      </ion-note>
+    </ion-item>
+  </ion-list>
+</ion-content>

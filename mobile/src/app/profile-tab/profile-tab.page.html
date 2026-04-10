@@ -1,0 +1,186 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>{{ editing ? 'Edit profile' : 'Profile' }}</ion-title>
+    <ion-buttons slot="end" *ngIf="editing">
+      <ion-button (click)="cancelEdit()">Cancel</ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="profile-content">
+  <ion-spinner *ngIf="loading" class="ion-margin"></ion-spinner>
+
+  <ng-container *ngIf="profile && !loading">
+    <div class="card" *ngIf="!editing">
+      <ion-avatar class="large" aria-hidden="true">
+        <img *ngIf="profile.photoUrl" [src]="profile.photoUrl" alt="" />
+        <span *ngIf="!profile.photoUrl">{{ profile.displayName.charAt(0).toUpperCase() }}</span>
+      </ion-avatar>
+      <h1>{{ profile.displayName }}</h1>
+      <p class="bio" *ngIf="profile.bio">{{ profile.bio }}</p>
+      <p class="tags" *ngIf="profile.tags">
+        <ion-icon name="pricetags-outline"></ion-icon> {{ profile.tags }}
+      </p>
+      <div class="persona-view" *ngIf="profile.communicationTone || profile.behavioursSummary || profile.expectingFor">
+        <p *ngIf="profile.communicationTone">
+          <span class="persona-label">Tone</span>{{ profile.communicationTone }}
+        </p>
+        <p *ngIf="profile.behavioursSummary">
+          <span class="persona-label">Behaviours</span>{{ profile.behavioursSummary }}
+        </p>
+        <p *ngIf="profile.expectingFor">
+          <span class="persona-label">Expecting</span>{{ profile.expectingFor }}
+        </p>
+      </div>
+      <div class="voice-preview" *ngIf="absoluteVoiceUrl() as vsrc">
+        <p class="persona-label">Voice intro (up to 30s)</p>
+        <audio [src]="vsrc" controls preload="none"></audio>
+      </div>
+      <p class="meta muted">User ID: {{ profile.userId }}</p>
+    </div>
+
+    <ion-list *ngIf="!editing" inset="true" lines="full" class="profile-menu">
+      <ion-list-header>Account</ion-list-header>
+      <ion-item button detail="true" (click)="startEdit()">
+        <ion-icon name="create-outline" slot="start" aria-hidden="true"></ion-icon>
+        <ion-label>Edit profile</ion-label>
+      </ion-item>
+      <ion-item button detail="true" routerLink="/tabs/wallet">
+        <ion-icon name="wallet-outline" slot="start" aria-hidden="true"></ion-icon>
+        <ion-label>Wallet</ion-label>
+      </ion-item>
+      <ion-item button detail="true" routerLink="/tabs/profile/transactions">
+        <ion-icon name="receipt-outline" slot="start" aria-hidden="true"></ion-icon>
+        <ion-label>Transaction history</ion-label>
+      </ion-item>
+      <ion-item button detail="true" (click)="openNotifications()">
+        <ion-icon name="notifications-outline" slot="start" aria-hidden="true"></ion-icon>
+        <ion-label>Notifications</ion-label>
+      </ion-item>
+    </ion-list>
+
+    <ion-list *ngIf="!editing" inset="true" lines="full" class="profile-menu">
+      <ion-list-header>Support</ion-list-header>
+      <ion-item button detail="true" (click)="openHelp()">
+        <ion-icon name="help-circle-outline" slot="start" aria-hidden="true"></ion-icon>
+        <ion-label>Help &amp; support</ion-label>
+      </ion-item>
+      <ion-item button detail="true" (click)="openPrivacy()">
+        <ion-icon name="shield-checkmark-outline" slot="start" aria-hidden="true"></ion-icon>
+        <ion-label>Privacy</ion-label>
+      </ion-item>
+      <ion-item button detail="true" (click)="sendFeedback()">
+        <ion-icon name="chatbox-ellipses-outline" slot="start" aria-hidden="true"></ion-icon>
+        <ion-label>Send feedback</ion-label>
+      </ion-item>
+      <ion-item button detail="true" (click)="openAbout()">
+        <ion-icon name="information-circle-outline" slot="start" aria-hidden="true"></ion-icon>
+        <ion-label>About</ion-label>
+      </ion-item>
+    </ion-list>
+
+    <ion-list *ngIf="!editing" inset="true" lines="full" class="profile-menu profile-menu-danger">
+      <ion-list-header>Danger zone</ion-list-header>
+      <ion-item
+        button
+        detail="false"
+        [disabled]="deleting"
+        (click)="confirmDeleteAccount()"
+        lines="full"
+      >
+        <ion-icon name="trash-outline" slot="start" color="danger" aria-hidden="true"></ion-icon>
+        <ion-label color="danger">{{ deleting ? 'Deleting…' : 'Delete account' }}</ion-label>
+      </ion-item>
+    </ion-list>
+
+    <ion-list *ngIf="editing" inset="true">
+      <ion-item>
+        <ion-input label="Display name" labelPlacement="stacked" [(ngModel)]="displayName"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-textarea label="Bio" labelPlacement="stacked" [(ngModel)]="bio" rows="4"></ion-textarea>
+      </ion-item>
+      <ion-item>
+        <ion-input
+          label="Tags"
+          labelPlacement="stacked"
+          [(ngModel)]="tags"
+          placeholder="comma-separated"
+        ></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-input
+          label="Tone"
+          labelPlacement="stacked"
+          [(ngModel)]="communicationTone"
+          placeholder="How you come across (e.g. warm, direct)"
+        ></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-textarea
+          label="Behaviours"
+          labelPlacement="stacked"
+          [(ngModel)]="behavioursSummary"
+          placeholder="How you typically act in a conversation"
+          rows="3"
+        ></ion-textarea>
+      </ion-item>
+      <ion-item>
+        <ion-textarea
+          label="Expecting"
+          labelPlacement="stacked"
+          [(ngModel)]="expectingFor"
+          placeholder="What you hope the other person brings"
+          rows="3"
+        ></ion-textarea>
+      </ion-item>
+      <ion-item lines="none" class="voice-edit-block">
+        <ion-label class="ion-text-wrap">
+          <h3>Voice intro</h3>
+          <p>Record up to 30 seconds. Shown on Connect when others find you.</p>
+          <p *ngIf="recording" class="record-timer">Recording {{ recordElapsedSec }}s / 30s</p>
+          <div class="voice-btn-row">
+            <ion-button
+              size="small"
+              *ngIf="!recording && !voiceUploading"
+              (click)="startVoiceRecord()"
+            >
+              Record
+            </ion-button>
+            <ion-button size="small" color="danger" *ngIf="recording" (click)="stopVoiceRecord()">
+              Stop &amp; upload
+            </ion-button>
+            <ion-button
+              size="small"
+              fill="clear"
+              color="medium"
+              *ngIf="profile?.voiceIntroUrl && !recording && !voiceUploading"
+              (click)="removeVoiceIntro()"
+            >
+              Remove intro
+            </ion-button>
+          </div>
+          <ion-spinner *ngIf="voiceUploading" name="crescent" class="voice-spinner"></ion-spinner>
+          <audio *ngIf="absoluteVoiceUrl() as ed" [src]="ed" controls preload="none" class="voice-edit-audio"></audio>
+        </ion-label>
+      </ion-item>
+    </ion-list>
+
+    <ion-button *ngIf="editing" expand="block" class="ion-margin-horizontal" (click)="save()">
+      Save changes
+    </ion-button>
+
+    <ion-button
+      *ngIf="!editing"
+      expand="block"
+      color="medium"
+      fill="outline"
+      class="ion-margin-horizontal sign-out-btn"
+      (click)="logout()"
+    >
+      Sign out
+    </ion-button>
+
+    <p *ngIf="!editing" class="footer-version">Connto v{{ appVersion }}</p>
+  </ng-container>
+</ion-content>

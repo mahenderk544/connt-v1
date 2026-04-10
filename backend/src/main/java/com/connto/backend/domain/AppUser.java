@@ -29,6 +29,9 @@ public class AppUser {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
 
+    @Column(name = "wallet_balance_paise", nullable = false)
+    private long walletBalancePaise = 0L;
+
     public UUID getId() {
         return id;
     }
@@ -67,5 +70,13 @@ public class AppUser {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public long getWalletBalancePaise() {
+        return walletBalancePaise;
+    }
+
+    public void setWalletBalancePaise(long walletBalancePaise) {
+        this.walletBalancePaise = walletBalancePaise;
     }
 }

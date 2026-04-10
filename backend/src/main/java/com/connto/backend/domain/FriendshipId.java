@@ -9,33 +9,33 @@ import java.util.UUID;
 @Embeddable
 public class FriendshipId implements Serializable {
 
-    @Column(name = "user_low", nullable = false)
-    private UUID userLow;
+    @Column(name = "user_one", nullable = false)
+    private UUID userOne;
 
-    @Column(name = "user_high", nullable = false)
-    private UUID userHigh;
+    @Column(name = "user_two", nullable = false)
+    private UUID userTwo;
 
     public FriendshipId() {}
 
-    public FriendshipId(UUID userLow, UUID userHigh) {
-        this.userLow = userLow;
-        this.userHigh = userHigh;
+    public FriendshipId(UUID userOne, UUID userTwo) {
+        this.userOne = userOne;
+        this.userTwo = userTwo;
     }
 
-    public UUID getUserLow() {
-        return userLow;
+    public UUID getUserOne() {
+        return userOne;
     }
 
-    public void setUserLow(UUID userLow) {
-        this.userLow = userLow;
+    public void setUserOne(UUID userOne) {
+        this.userOne = userOne;
     }
 
-    public UUID getUserHigh() {
-        return userHigh;
+    public UUID getUserTwo() {
+        return userTwo;
     }
 
-    public void setUserHigh(UUID userHigh) {
-        this.userHigh = userHigh;
+    public void setUserTwo(UUID userTwo) {
+        this.userTwo = userTwo;
     }
 
     @Override
@@ -47,11 +47,11 @@ public class FriendshipId implements Serializable {
             return false;
         }
         FriendshipId that = (FriendshipId) o;
-        return Objects.equals(userLow, that.userLow) && Objects.equals(userHigh, that.userHigh);
+        return Objects.equals(userOne, that.userOne) && Objects.equals(userTwo, that.userTwo);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(userLow, userHigh);
+        return Objects.hash(userOne, userTwo);
     }
 }

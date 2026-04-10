@@ -1,0 +1,228 @@
+<ion-content [fullscreen]="true" class="connect-hero-content">
+  <div class="connect-gradient-bg" aria-hidden="true"></div>
+
+  <div class="connect-safe">
+    <header class="connect-topbar">
+      <span class="connect-logo">Connto</span>
+      <div class="connect-topbar-actions">
+        <a routerLink="/tabs/wallet/add" class="wallet-pill" aria-label="Add money to wallet">
+          <span class="wallet-currency">₹</span>{{ walletBalanceDisplay() }}
+          <ion-icon name="add-circle" class="wallet-plus" aria-hidden="true"></ion-icon>
+        </a>
+        <a routerLink="/tabs/profile" class="profile-avatar-link" aria-label="Profile">
+          <span class="profile-dot" aria-hidden="true"></span>
+          <span class="profile-avatar">{{ profileInitial }}</span>
+        </a>
+      </div>
+    </header>
+
+    <p class="connect-intro">Experts and friends — simple and calm.</p>
+
+    <ion-segment
+      class="connect-segment"
+      [(ngModel)]="mainView"
+      [scrollable]="true"
+      mode="md"
+    >
+      <ion-segment-button value="experts">
+        <ion-label>Experts</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="friends">
+        <ion-label>Friends</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+
+    <ng-container *ngIf="mainView === 'experts'">
+      <h2 class="featured-title">Featured Experts</h2>
+
+      <div class="chips-row">
+        <button
+          type="button"
+          *ngFor="let chip of categoryChips"
+          class="filter-chip"
+          [class.filter-chip-active]="activeCategory === chip.id"
+          (click)="setCategory(chip.id)"
+        >
+          {{ chip.label }}
+        </button>
+      </div>
+
+      <div class="expert-list">
+        <article class="expert-card" *ngFor="let e of filteredExperts">
+          <div class="expert-ribbon" *ngIf="e.starRibbon">Star</div>
+
+          <div class="expert-left">
+            <div class="expert-avatar-wrap">
+              <div
+                class="expert-avatar"
+                [style.background]="'linear-gradient(145deg,' + e.avatarGradient[0] + ',' + e.avatarGradient[1] + ')'"
+              >
+                <span class="expert-emoji" aria-hidden="true">{{ e.emoji }}</span>
+              </div>
+              <span class="expert-online-dot" *ngIf="e.online" aria-hidden="true"></span>
+            </div>
+            <span class="expert-online-pill" *ngIf="e.online">Online</span>
+            <div class="expert-rating" *ngIf="e.rating > 0">
+              <ion-icon name="star" class="star-icon" aria-hidden="true"></ion-icon>
+              {{ e.rating | number: '1.1-1' }}
+            </div>
+          </div>
+
+          <div class="expert-body">
+            <div class="expert-body-top">
+              <div>
+                <h3 class="expert-name">{{ e.name }} {{ e.emoji }}</h3>
+                <p class="expert-meta">{{ e.age }} Y · {{ e.title }}</p>
+                <div class="expert-persona" *ngIf="e.tone || e.behaviours || e.expectingFor">
+                  <p *ngIf="e.tone"><span class="persona-label">Tone</span> {{ e.tone }}</p>
+                  <p *ngIf="e.behaviours"><span class="persona-label">Behaviours</span> {{ e.behaviours }}</p>
+                  <p *ngIf="e.expectingFor"><span class="persona-label">Expecting</span> {{ e.expectingFor }}</p>
+                </div>
+                <div class="expert-voice" *ngIf="absoluteMediaUrl(e.voiceIntroUrl) as voiceSrc">
+                  <span class="persona-label">Voice intro (30s max)</span>
+                  <audio [src]="voiceSrc" controls preload="none" class="expert-audio"></audio>
+                </div>
+              </div>
+              <p class="expert-lang">{{ e.languages }}</p>
+            </div>
+            <div class="expert-body-bottom">
+              <p class="expert-rate">₹{{ e.ratePerMin }}/min</p>
+              <div class="expert-action-btns">
+                <button
+                  *ngIf="expertShowMessage(e)"
+                  type="button"
+                  class="friend-request-btn"
+                  (click)="openMessageWith(e.linkedUserId!, e.name)"
+                >
+                  Message
+                </button>
+                <span *ngIf="expertShowPending(e)" class="pending-pill" aria-live="polite">Pending</span>
+                <button
+                  *ngIf="expertShowRequest(e)"
+                  type="button"
+                  class="friend-request-btn"
+                  [attr.aria-label]="'Send friend request to ' + e.name"
+                  (click)="friendRequestExpert(e)"
+                >
+                  Request
+                </button>
+                <button type="button" class="call-now-btn" (click)="callExpert(e)">
+                  <ion-icon name="call" aria-hidden="true"></ion-icon>
+                  Call Now
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </ng-container>
+
+    <div *ngIf="mainView === 'friends'" class="friends-panel">
+      <h2 class="friends-section-title">Find people</h2>
+      <p class="friends-hint">Search by display name to send a connection request.</p>
+
+      <ion-searchbar
+        [(ngModel)]="query"
+        (ionInput)="search()"
+        placeholder="Search by name"
+        [debounce]="400"
+        class="friends-search"
+      ></ion-searchbar>
+
+      <ion-list *ngIf="results.length > 0" class="friends-list" lines="none">
+        <ion-item *ngFor="let u of results" class="friends-item">
+          <ion-avatar slot="start" aria-hidden="true">
+            <span>{{ u.displayName.charAt(0).toUpperCase() }}</span>
+          </ion-avatar>
+          <ion-label>
+            <h2
+              class="friends-result-name"
+              [class.friends-result-name--chat]="isFriend(u.userId)"
+              (click)="onSearchResultNameClick(u, $event)"
+            >
+              {{ u.displayName }}
+            </h2>
+            <p *ngIf="u.bio">{{ u.bio }}</p>
+            <div class="search-persona" *ngIf="u.communicationTone || u.behavioursSummary || u.expectingFor">
+              <p *ngIf="u.communicationTone"><span class="persona-label">Tone</span> {{ u.communicationTone }}</p>
+              <p *ngIf="u.behavioursSummary"><span class="persona-label">Behaviours</span> {{ u.behavioursSummary }}</p>
+              <p *ngIf="u.expectingFor"><span class="persona-label">Expecting</span> {{ u.expectingFor }}</p>
+            </div>
+            <div class="search-voice" *ngIf="absoluteMediaUrl(u.voiceIntroUrl) as vurl">
+              <audio [src]="vurl" controls preload="none" class="search-audio"></audio>
+            </div>
+          </ion-label>
+          <ion-button
+            *ngIf="isFriend(u.userId)"
+            slot="end"
+            size="small"
+            (click)="openMessageWith(u.userId, u.displayName)"
+          >
+            Message
+          </ion-button>
+          <ion-button *ngIf="canShowRequestForUser(u.userId)" slot="end" size="small" (click)="connectTo(u)">
+            Request
+          </ion-button>
+          <ion-text
+            *ngIf="!isFriend(u.userId) && hasPendingOutgoing(u.userId)"
+            slot="end"
+            color="medium"
+            class="pending-label"
+          >
+            Pending
+          </ion-text>
+        </ion-item>
+      </ion-list>
+
+      <ion-text *ngIf="!searching && query.trim() && results.length === 0" color="medium">
+        <p class="friends-empty">No matches.</p>
+      </ion-text>
+
+      <h2 class="friends-section-title ion-margin-top">Your friends</h2>
+      <p class="friends-hint">Tap a name to open your conversation.</p>
+
+      <ion-spinner *ngIf="loadingFriends" class="ion-margin"></ion-spinner>
+
+      <ion-list *ngIf="!loadingFriends && friends.length > 0" class="friends-list" lines="none">
+        <ion-item
+          *ngFor="let f of friends"
+          class="friends-item"
+          button
+          detail="true"
+          (click)="openMessageWith(f.userId, f.displayName)"
+        >
+          <ion-avatar slot="start" aria-hidden="true">
+            <span>{{ f.displayName.charAt(0).toUpperCase() }}</span>
+          </ion-avatar>
+          <ion-label>
+            <h2>{{ f.displayName }}</h2>
+          </ion-label>
+        </ion-item>
+      </ion-list>
+
+      <div *ngIf="!loadingFriends && friends.length === 0" class="friends-empty-wrap">
+        <p>No friends yet. Accept a request or send one to someone you know.</p>
+      </div>
+
+      <h2 class="friends-section-title ion-margin-top">Incoming requests</h2>
+      <p class="friends-hint">Accept to become friends and unlock messaging.</p>
+
+      <ion-spinner *ngIf="loadingIncoming" class="ion-margin"></ion-spinner>
+
+      <ion-list *ngIf="!loadingIncoming && incoming.length > 0" class="friends-list" lines="none">
+        <ion-item *ngFor="let r of incoming" class="friends-item">
+          <ion-label>
+            <h2>{{ r.fromDisplayName }}</h2>
+            <p>wants to connect</p>
+          </ion-label>
+          <ion-button fill="clear" color="success" (click)="accept(r.id)">Accept</ion-button>
+          <ion-button fill="clear" color="medium" (click)="decline(r.id)">Decline</ion-button>
+        </ion-item>
+      </ion-list>
+
+      <div *ngIf="!loadingIncoming && incoming.length === 0" class="friends-empty-wrap">
+        <p>No pending requests.</p>
+      </div>
+    </div>
+  </div>
+</ion-content>

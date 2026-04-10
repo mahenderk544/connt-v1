@@ -10,6 +10,7 @@ import com.connto.backend.repository.ConnectionRequestRepository;
 import com.connto.backend.repository.FriendshipRepository;
 import com.connto.backend.repository.ProfileRepository;
 import com.connto.backend.web.ApiException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -37,6 +38,30 @@ public class ConnectionService {
         this.profiles = profiles;
     }
 
+    /**
+     * Users may message/call each other if there is a friendship row (including seeded data) or an
+     * accepted connection request in either direction.
+     */
+    @Transactional(readOnly = true)
+    public boolean areConnected(UUID a, UUID b) {
+        if (a.equals(b)) {
+            return false;
+        }
+        if (friendships.areFriends(a, b)) {
+            return true;
+        }
+        return hasAcceptedRequestBetween(a, b);
+    }
+
+    private boolean hasAcceptedRequestBetween(UUID a, UUID b) {
+        return requests.findByFromUserIdAndToUserId(a, b)
+                        .filter(r -> r.getStatus() == ConnectionRequestStatus.ACCEPTED)
+                        .isPresent()
+                || requests.findByFromUserIdAndToUserId(b, a)
+                        .filter(r -> r.getStatus() == ConnectionRequestStatus.ACCEPTED)
+                        .isPresent();
+    }
+
     @Transactional
     public ConnectionRequestResponse sendRequest(UUID fromId, UUID toId) {
         if (fromId.equals(toId)) {
@@ -48,9 +73,7 @@ public class ConnectionService {
                                 () -> new ApiException(HttpStatus.NOT_FOUND, "User not found"));
         AppUser from = users.getReferenceById(fromId);
 
-        UUID low = fromId.compareTo(toId) < 0 ? fromId : toId;
-        UUID high = fromId.compareTo(toId) < 0 ? toId : fromId;
-        if (friendships.findByOrderedPair(low, high).isPresent()) {
+        if (friendships.areFriends(fromId, toId)) {
             throw new ApiException(HttpStatus.CONFLICT, "Already connected");
         }
 
@@ -126,12 +149,11 @@ public class ConnectionService {
             throw new ApiException(HttpStatus.CONFLICT, "Request is not pending");
         }
         req.setStatus(ConnectionRequestStatus.ACCEPTED);
-        UUID a = req.getFromUser().getId();
-        UUID b = req.getToUser().getId();
-        UUID low = a.compareTo(b) < 0 ? a : b;
-        UUID high = a.compareTo(b) < 0 ? b : a;
+        requests.save(req);
+        UUID fromUserId = req.getFromUser().getId();
+        UUID toUserId = req.getToUser().getId();
         Friendship f = new Friendship();
-        f.setId(new FriendshipId(low, high));
+        f.setId(new FriendshipId(fromUserId, toUserId));
         friendships.save(f);
     }
 
@@ -154,13 +176,13 @@ public class ConnectionService {
 
     @Transactional(readOnly = true)
     public List<FriendSummary> listFriends(UUID userId) {
-        return friendships.findAllForUser(userId).stream()
+        List<Friendship> rows = new ArrayList<>();
+        rows.addAll(friendships.findWhereUserOne(userId));
+        rows.addAll(friendships.findWhereUserTwo(userId));
+        return rows.stream()
                 .map(
                         f -> {
-                            UUID peer =
-                                    f.getId().getUserLow().equals(userId)
-                                            ? f.getId().getUserHigh()
-                                            : f.getId().getUserLow();
+                            UUID peer = f.peerUserId(userId);
                             String name =
                                     profiles.findByUserId(peer)
                                             .map(p -> p.getDisplayName())
